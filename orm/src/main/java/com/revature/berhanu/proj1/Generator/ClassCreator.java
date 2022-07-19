@@ -18,7 +18,8 @@ public class ClassCreator {
     String UserName = "postgresAdmin";
     String Password = "PG1234567890.";
     String dataBaseName = "BankSystemDB";
-
+  
+    // this method returns the list of tables in the database
     public List<String> getTables()
     {
         List<String> tableList = new ArrayList<String>();
@@ -71,6 +72,7 @@ public class ClassCreator {
         return value;
 
     }
+    /// returns the coulumns or fields in each table giiven as a parameter
     public List<Column> getColoumns( String tableName)
     {
         DBConnection objDBConnection = new DBConnection();
@@ -99,6 +101,7 @@ public class ClassCreator {
         }
         return objColoumnList;
     }
+    /// here this method writes in a text file the classes genarated
 
     public void writeToFile(String content, String fileName){
         
@@ -119,6 +122,7 @@ public class ClassCreator {
         }    
     }
     
+    // this method constructs the different strings to be used in the methods
     public String[] getMethodSubString(List<Column> ColoumnList, String subType){
         String [] subString = {"",""};
         if(subType == "create"){
@@ -128,6 +132,7 @@ public class ClassCreator {
             for(int i=0; i<ColoumnList.size(); i++)
             {
                 Column objColoumn = ColoumnList.get(i);
+                /// Make sure that the column is not a primary key or auto incremented 
                 if(ColoumnList.get(i).isPrimaryKey == false && ColoumnList.get(i).isAutoIncremented == false){
                     if(i+1 < ColoumnList.size()){
                         subString[0] = subString[0] + objColoumn.column_name + ",";
@@ -186,9 +191,139 @@ public class ClassCreator {
                 } 
             }
         }
+        else if (subType.equals("update")){
+            
+            subString[0] = "";
+            subString[1] = "";
+            Integer pkeyIndex = 0;
+            for(int i=0; i<ColoumnList.size(); i++)
+            {
+                Column objColumn = ColoumnList.get(i);
+                if(objColumn.isPrimaryKey ==  true){
+                    pkeyIndex = i;
+                }
+                else if(objColumn.isPrimaryKey == false){
+                    if(i+1< ColoumnList.size()){
+                        subString[0] = subString[0] + "\"" + objColumn.column_name + "=?,\"+"+ "\n";
+                    }
+                    else{
+                        subString[0] = subString[0] + "\"" + objColumn.column_name + "=?\"+" ;
+                    }
+                }
+                
+            }
+            
+            subString[1]= subString[1]+ "\""+ "WHERE "+ColoumnList.get(pkeyIndex).column_name+"=?;\";";
+        }
+        else if (subType == "updateParams"){
+            subString[0] = "";
+            subString[1] = "";
+            for(int i=0; i<ColoumnList.size(); i++)
+            {
+                Column objColoumn = ColoumnList.get(i);
+                String type  = objColoumn.data_type;
+                if(objColoumn.data_type.equals("bigint")){
+                    type = "Long";
+                }
+                else if (objColoumn.data_type.equals("text") ){
+                    type = "String";
+                }
+                else if (objColoumn.data_type.equals("double precision") ){
+                    type = "Double";
+                }
+                if(i+1 < ColoumnList.size()){
+                    subString[0] = subString[0]+ type +" "+ objColoumn.column_name + ", " ;
+                }
+                else {
+                    subString[0] = subString[0]+ type +" "+ objColoumn.column_name + "" ;
+                }    
+            }
+        }
+        else if (subType == "prepUpdate"){
+            subString[0] = "";
+            subString[1] = "";
+            Column objPkeyCol = new Column();
+
+            for(int i=0; i<ColoumnList.size(); i++)
+            {
+                // we need to treat the primary key differntly_ Pk goes into the WHERE clause 
+                Column objColoumn = ColoumnList.get(i);
+                if(objColoumn.isPrimaryKey){
+                    objPkeyCol.column_name = objColoumn.column_name;
+                    objPkeyCol.isAutoIncremented = objColoumn.isAutoIncremented;
+                    objPkeyCol.isPrimaryKey = objColoumn.isPrimaryKey;
+                    objPkeyCol.data_type =  objColoumn.data_type;
+                    objPkeyCol.is_nullable= objColoumn.is_nullable;
+                    objPkeyCol.isForeignKey = objColoumn.isForeignKey;
+                }
+                else if(objColoumn.isAutoIncremented == false && objColoumn.isPrimaryKey == false){
+
+                    if(objColoumn.data_type.equals("text") ){
+                        subString[0] = subString[0] +"objPreparedStatement.setString("+ String.valueOf(i) +" , " + objColoumn.column_name +");\n" ;
+                    }
+                    else if(objColoumn.data_type.equals("double precision")){
+                        subString[0] = subString[0] +"objPreparedStatement.setDouble("+  String.valueOf(i) +" , " + objColoumn.column_name +");\n" ;
+                    }
+                    else if(objColoumn.data_type.equals("bigint")){
+                        subString[0] = subString[0] +"objPreparedStatement.setLong("+ String.valueOf(i) +" , " + objColoumn.column_name +");\n" ;
+                    }
+                }
+            }
+            subString[0] = subString[0] +"objPreparedStatement.setLong("+ String.valueOf(ColoumnList.size()) +" , " + objPkeyCol.column_name +");\n" ;
+        }
+        else if (subType == "delete"){
+            subString[0] = "";
+            subString[1] = "";
+            for(int i=0; i<ColoumnList.size(); i++)
+            {
+                // we need to treat the primary key differntly_ Pk goes into the WHERE clause 
+                Column objColoumn = ColoumnList.get(i);
+                if(objColoumn.isPrimaryKey){
+                    subString[0] = "\""+ " WHERE "+ objColoumn.column_name + "=?;\";";
+                }
+            }
+        }
+        else if (subType == "deleteParam"){
+            subString[0] = "";
+            subString[1] = "";
+            for(int i=0; i<ColoumnList.size(); i++)
+            {
+                Column objColoumn = ColoumnList.get(i);
+                String type  = objColoumn.data_type;
+                if(objColoumn.isPrimaryKey){
+                    if(objColoumn.data_type.equals("bigint")){
+                        type = "Long";
+                    }
+                    else if (objColoumn.data_type.equals("text") ){
+                        type = "String";
+                    }
+                    else if (objColoumn.data_type.equals("double precision") ){
+                        type = "Double";
+                    }
+                    subString[0] = subString[0]+ type +" "+ objColoumn.column_name + "" ;
+                }
+            }
+        }
+        else if (subType == "prepDelete"){
+            for(int i=0; i<ColoumnList.size(); i++)
+            {
+                Column objColoumn = ColoumnList.get(i);
+                if(objColoumn.isPrimaryKey){
+                    if(objColoumn.data_type.equals("text") ){
+                        subString[0] = subString[0] +"objPreparedStatement.setString("+ 1 +" , " + objColoumn.column_name +");\n" ;
+                    }
+                    else if(objColoumn.data_type.equals("double precision")){
+                        subString[0] = subString[0] +"objPreparedStatement.setDouble("+  1 +" , " + objColoumn.column_name +");\n" ;
+                    }
+                    else if(objColoumn.data_type.equals("bigint")){
+                        subString[0] = subString[0] +"objPreparedStatement.setLong("+ 1 +" , " + objColoumn.column_name +");\n" ;
+                    }
+                }
+            }
+        }
         return subString;
     }
-
+   // this methods is used to create classes that generate tables
     public String createMethods(String tableName,List<Column> ColoumnList, String methodType){
         String methodContent ="";
         if(methodType.equals("Create")){
@@ -196,7 +331,7 @@ public class ClassCreator {
             String subString2[] = getMethodSubString(ColoumnList, "prepCreate");
             methodContent = "ServerConnect objServerConnection = new ServerConnect();"+"\n"+
                             "Connection objConnection = objServerConnection.connectToServer();"+"\n"+
-                            "String InsertUserQuery = \"INSERT INTO "+ tableName + "\"\n"+
+                            "String InsertUserQuery = \"INSERT INTO "+ tableName + " \"\n"+
                             subString1[0]+"\"\n"+
                             subString1[1]+"\n"+
                             "try{"+"\n"+
@@ -209,10 +344,40 @@ public class ClassCreator {
                             "}"+"\n";
         }
         else if(methodType.equals("Update")){
-
+            String subString1[] = getMethodSubString(ColoumnList, "update");
+            String subString2[] = getMethodSubString(ColoumnList, "prepUpdate");
+            methodContent = "ServerConnect objServerConnection = new ServerConnect();"+"\n"+
+                            "Connection objConnection = objServerConnection.connectToServer();"+"\n"+
+                            "String updateUserQuery = \"UPDATE public."+ tableName + " \"+\n"+
+                            subString1[0]+ "\n"+
+                            subString1[1]+ "\n"+
+                            "try{"+"\n"+
+                            "PreparedStatement objPreparedStatement = objConnection.prepareStatement(updateUserQuery);" + "\n"+
+                            subString2[0]+"\n"+
+                            "objPreparedStatement.executeUpdate();"+"\n"+
+                            "}"+"\n"+
+                            "catch(SQLException e){"+"\n"+
+                            "throw (new Error(e));"+"\n"+
+                            "}"+"\n"+
+                            "";
+       
         }
         else if(methodType.equals("Delete")){
-            
+            String subString1[] = getMethodSubString(ColoumnList, "delete");
+            String subString2[] = getMethodSubString(ColoumnList, "prepDelete");
+            methodContent = "ServerConnect objServerConnection = new ServerConnect();"+"\n"+
+                            "Connection objConnection = objServerConnection.connectToServer();"+"\n"+
+                            "String deleteQuery = \"DELETE FROM public."+ tableName + " \"+\n"+
+                            subString1[0]+ "\n"+
+                            "try{"+"\n"+
+                            "PreparedStatement objPreparedStatement = objConnection.prepareStatement(deleteQuery);" + "\n"+
+                            subString2[0]+"\n"+
+                            "objPreparedStatement.executeUpdate();"+"\n"+
+                            "}"+"\n"+
+                            "catch(SQLException e){"+"\n"+
+                            "throw (new Error(e));"+"\n"+
+                            "}"+"\n"+
+                            "";
         }
         else if(methodType.equals("getSingle")){
             
@@ -240,9 +405,11 @@ public class ClassCreator {
                              "  public void create("+getMethodSubString(ColoumnList, "createParams")[0] +"){"+"\n"+
                                 createMethods(ClassNames.get(i), ColoumnList, "Create")+
                              "}"+"\n"+
-                             "  public void update("+"){"+"\n"+
+                             "  public void update("+getMethodSubString(ColoumnList, "updateParams")[0]+"){"+"\n"+
+                                createMethods(ClassNames.get(i), ColoumnList, "Update")+
                              "}"+"\n"+
-                             "  public void delete("+"){"+"\n"+
+                             "  public void delete("+getMethodSubString(ColoumnList, "deleteParam")[0]+"){"+"\n"+
+                                createMethods(ClassNames.get(i), ColoumnList, "Delete")+
                              "}"+"\n"+
                              "  public void getSingle("+"){"+"\n"+
                              "}"+"\n"+
