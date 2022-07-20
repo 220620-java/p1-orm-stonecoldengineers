@@ -125,7 +125,26 @@ public class ClassCreator {
     // this method constructs the different strings to be used in the methods
     public String[] getMethodSubString(List<Column> ColoumnList, String subType){
         String [] subString = {"",""};
-        if(subType == "create"){
+        if(subType == "classProperties"){
+            subString[0] = "";
+            subString[1] = "";
+            for(int i=0; i<ColoumnList.size(); i++)
+            {
+                Column objColoumn = ColoumnList.get(i);
+                String type  = objColoumn.data_type;
+                if(objColoumn.data_type.equals("bigint")){
+                    type = "Long";
+                }
+                else if (objColoumn.data_type.equals("text") ){
+                    type = "String";
+                }
+                else if (objColoumn.data_type.equals("double precision") ){
+                    type = "Double";
+                }
+                subString[0] = subString[0]+" public "+ type +" " +objColoumn.column_name + "; \n" ;
+            }
+        }
+        else if(subType == "create"){
            subString[0] = "+\"(";
            subString[1] = "+\"VALUES (default, ";
            
@@ -321,6 +340,136 @@ public class ClassCreator {
                 }
             }
         }
+        
+        else if (subType == "single"){
+            subString[0] = "";
+            subString[1] = "";
+            for(int i=0; i<ColoumnList.size(); i++)
+            {
+                // we need to treat the primary key differntly_ Pk goes into the WHERE clause 
+                Column objColoumn = ColoumnList.get(i);
+                if(objColoumn.isPrimaryKey){
+                    subString[0] = "\""+ " WHERE "+ objColoumn.column_name + "=?;\";";
+                }
+            }
+        }
+        else if (subType == "singleParam"){
+            subString[0] = "";
+            subString[1] = "";
+            for(int i=0; i<ColoumnList.size(); i++)
+            {
+                Column objColoumn = ColoumnList.get(i);
+                String type  = objColoumn.data_type;
+                if(objColoumn.isPrimaryKey){
+                    if(objColoumn.data_type.equals("bigint")){
+                        type = "Long";
+                    }
+                    else if (objColoumn.data_type.equals("text") ){
+                        type = "String";
+                    }
+                    else if (objColoumn.data_type.equals("double precision") ){
+                        type = "Double";
+                    }
+                    subString[0] = subString[0]+ type +" "+ objColoumn.column_name + "" ;
+                }
+            }
+        }
+        else if (subType == "prepSingle"){
+            for(int i=0; i<ColoumnList.size(); i++){
+                Column objColoumn = ColoumnList.get(i);
+                if(objColoumn.isPrimaryKey){
+                    if(objColoumn.data_type.equals("text") ){
+                        subString[0] = subString[0] +"objPreparedStatement.setString("+ 1 +" , " + objColoumn.column_name +");\n" ;
+                    }
+                    else if(objColoumn.data_type.equals("double precision")){
+                        subString[0] = subString[0] +"objPreparedStatement.setDouble("+  1 +" , " + objColoumn.column_name +");\n" ;
+                    }
+                    else if(objColoumn.data_type.equals("bigint")){
+                        subString[0] = subString[0] +"objPreparedStatement.setLong("+ 1 +" , " + objColoumn.column_name +");\n" ;
+                    }
+                }
+            }
+        }
+       
+        else if (subType == "last"){
+            subString[0] = "";
+            subString[1] = "";
+            for(int i=0; i<ColoumnList.size(); i++)
+            {
+                //Select max(accountID) from public.tblaccount 
+                Column objColoumn = ColoumnList.get(i);
+                if(objColoumn.isPrimaryKey){
+                    subString[0] = "\""+ "SELECT MAX("+objColoumn.column_name+") FROM "+ objColoumn.column_name + "=?;\";";
+                }
+            }
+        }
+        else if (subType == "lastParam"){
+            subString[0] = "";
+            subString[1] = "";
+            for(int i=0; i<ColoumnList.size(); i++)
+            {
+                Column objColoumn = ColoumnList.get(i);
+                String type  = objColoumn.data_type;
+                if(objColoumn.isPrimaryKey){
+                    if(objColoumn.data_type.equals("bigint")){
+                        type = "Long";
+                    }
+                    else if (objColoumn.data_type.equals("text") ){
+                        type = "String";
+                    }
+                    else if (objColoumn.data_type.equals("double precision") ){
+                        type = "Double";
+                    }
+                    subString[0] = subString[0]+ type +" "+ objColoumn.column_name + "" ;
+                }
+            }
+        }
+        else if (subType == "prepLast"){
+            for(int i=0; i<ColoumnList.size(); i++){
+                Column objColoumn = ColoumnList.get(i);
+                if(objColoumn.isPrimaryKey){
+                    if(objColoumn.data_type.equals("text") ){
+                        subString[0] = subString[0] +"objPreparedStatement.setString("+ 1 +" , " + objColoumn.column_name +");\n" ;
+                    }
+                    else if(objColoumn.data_type.equals("double precision")){
+                        subString[0] = subString[0] +"objPreparedStatement.setDouble("+  1 +" , " + objColoumn.column_name +");\n" ;
+                    }
+                    else if(objColoumn.data_type.equals("bigint")){
+                        subString[0] = subString[0] +"objPreparedStatement.setLong("+ 1 +" , " + objColoumn.column_name +");\n" ;
+                    }
+                }
+            }
+        }
+       
+
+        return subString;
+    }
+    public String getSubStringsForSelect(String tableName, List<Column> ColoumnList, String options){
+        String subString = "";
+        if(options == "getobjAssignment"){
+            for(int i=0; i<ColoumnList.size(); i++){
+                Column objColoumn = ColoumnList.get(i);
+                if(objColoumn.data_type.equals("text") ){
+                    subString = subString+ "obj"+tableName+"."+objColoumn.column_name+" = "+"Result.getString(\""+objColoumn.column_name+"\");\n";
+                }
+                else if(objColoumn.data_type.equals("double precision")){
+                    subString = subString+ "obj"+tableName+"."+objColoumn.column_name+" = "+"Result.getDouble(\""+objColoumn.column_name+"\");\n";
+                }
+                else if(objColoumn.data_type.equals("bigint")){
+                    subString = subString+ "obj"+tableName+"."+objColoumn.column_name+" = "+"Result.getLong(\""+objColoumn.column_name+"\");\n";
+                }
+                
+            }
+        }
+        else if(options == "getlastQuery"){
+            for(int i=0; i<ColoumnList.size(); i++){
+                Column objColoumn = ColoumnList.get(i);
+                if(objColoumn.isPrimaryKey){
+                    subString = "String getLastQuery = \" SELECT MAX("+objColoumn.column_name+") FROM "+ tableName + "=?;\";";
+                }
+            }
+        }
+        
         return subString;
     }
    // this methods is used to create classes that generate tables
@@ -379,14 +528,63 @@ public class ClassCreator {
                             "}"+"\n"+
                             "";
         }
-        else if(methodType.equals("getSingle")){
-            
+        else if(methodType.equals("Single")){
+            String subString1[] = getMethodSubString(ColoumnList, "single");
+            String subString2[] = getMethodSubString(ColoumnList, "prepSingle");
+            methodContent = "ServerConnect objServerConnection = new ServerConnect();"+"\n"+
+                            "Connection objConnection = objServerConnection.connectToServer();"+"\n"+
+                            "String getSingleQuery = \"SELECT * FROM public."+ tableName + " \"+\n"+
+                            subString1[0]+ "\n"+
+                            "try{"+"\n"+
+                            "PreparedStatement objPreparedStatement = objConnection.prepareStatement(getSingleQuery);" + "\n"+
+                            subString2[0]+"\n"+
+                            "ResultSet Result = objPreparedStatement.executeQuery();"+"\n"+
+                            "while(Result.next()){"+"\n"+
+                            getSubStringsForSelect(tableName,ColoumnList,"getobjAssignment")+"\n"+
+                            "}"+"\n"+
+                            "}"+"\n"+
+                            "catch(SQLException e){"+"\n"+
+                            "throw (new Error(e));"+"\n"+
+                            "}"+"\n"+
+                            "";
+        }
+        else if(methodType.equals("Last")){
+            String subString1[] = getMethodSubString(ColoumnList, "single");
+            String subString2[] = getMethodSubString(ColoumnList, "prepSingle");
+            methodContent = "ServerConnect objServerConnection = new ServerConnect();"+"\n"+
+                            "Connection objConnection = objServerConnection.connectToServer();"+"\n"+
+                            getSubStringsForSelect(tableName,ColoumnList,"getlastQuery")+ "\n"+
+                            "try{"+"\n"+
+                            "PreparedStatement objPreparedStatement = objConnection.prepareStatement(getLastQuery);" + "\n"+
+                            "ResultSet Result = objPreparedStatement.executeQuery();"+"\n"+
+                            "while(Result.next()){"+"\n"+
+                            getSubStringsForSelect(tableName,ColoumnList,"getobjAssignment")+"\n"+
+                            "}"+"\n"+
+                            "}"+"\n"+
+                            "catch(SQLException e){"+"\n"+
+                            "throw (new Error(e));"+"\n"+
+                            "}"+"\n"+
+                            "";
         }
         else if(methodType.equals("getList")){
-            
-        }
-        else if(methodType.equals("getLast")){
-            
+            String subString1[] = getMethodSubString(ColoumnList, "List");
+            String subString2[] = getMethodSubString(ColoumnList, "prepList");
+            methodContent = "ServerConnect objServerConnection = new ServerConnect();"+"\n"+
+                            "Connection objConnection = objServerConnection.connectToServer();"+"\n"+
+                            "String getSingleQuery = \"SELECT * FROM public."+ tableName + " \"+\n"+
+                            
+                            "try{"+"\n"+
+                            "PreparedStatement objPreparedStatement = objConnection.prepareStatement(getSingleQuery);" + "\n"+
+                            subString2[0]+"\n"+
+                            "ResultSet Result = objPreparedStatement.executeQuery();"+"\n"+
+                            "while(Result.next()){"+"\n"+
+                            getSubStringsForSelect(tableName,ColoumnList,"getobjAssignment")+"\n"+
+                            "}"+"\n"+
+                            "}"+"\n"+
+                            "catch(SQLException e){"+"\n"+
+                            "throw (new Error(e));"+"\n"+
+                            "}"+"\n"+
+                            "";
         }
         else if(methodType.equals("getLike")){
             
@@ -401,7 +599,10 @@ public class ClassCreator {
             List<Column> ColoumnList = getColoumns(ClassNames.get(i));
             String classCode="import java.sql.SQLException;"+"\n"+
                              "import java.sql.*;"+"\n"+
+                             "import java.util.ArrayList;"+"\n"+
+                             "import java.util.List;"+"\n"+
                              "public class "+ClassNames.get(i) + "{"+"\n"+
+                               getMethodSubString(ColoumnList, "classProperties")[0] +"\n"+
                              "  public void create("+getMethodSubString(ColoumnList, "createParams")[0] +"){"+"\n"+
                                 createMethods(ClassNames.get(i), ColoumnList, "Create")+
                              "}"+"\n"+
@@ -411,13 +612,25 @@ public class ClassCreator {
                              "  public void delete("+getMethodSubString(ColoumnList, "deleteParam")[0]+"){"+"\n"+
                                 createMethods(ClassNames.get(i), ColoumnList, "Delete")+
                              "}"+"\n"+
-                             "  public void getSingle("+"){"+"\n"+
+                             "  public "+ ClassNames.get(i)+ " getSingle("+getMethodSubString(ColoumnList, "singleParam")[0]+"){"+"\n"+
+                             ClassNames.get(i) +" obj"+ClassNames.get(i) +" = new "+ ClassNames.get(i)+"()"+";\n"+
+                             createMethods(ClassNames.get(i), ColoumnList, "Single")+
+                             "return "+" obj"+ClassNames.get(i)+";\n"+
                              "}"+"\n"+
-                             "  public void getList("+"){"+"\n"+
+                             "  public "+ ClassNames.get(i)+ " getLast("+getMethodSubString(ColoumnList, "singleParam")[0]+"){"+"\n"+
+                             ClassNames.get(i) +" obj"+ClassNames.get(i) +" = new "+ ClassNames.get(i)+"()"+";\n"+
+                             createMethods(ClassNames.get(i), ColoumnList, "Last")+
+                             "return "+" obj"+ClassNames.get(i)+";\n"+
                              "}"+"\n"+
-                             "  public void getLast("+"){"+"\n"+
+                             "  public List<"+ClassNames.get(i)+"> getList("+"){"+"\n"+
+                             "List  <"+ClassNames.get(i) +"> obj"+ClassNames.get(i) +"sList = new ArrayList<"+ ClassNames.get(i)+">()"+";\n"+
+                             ClassNames.get(i) +" obj"+ClassNames.get(i) +" = new "+ ClassNames.get(i)+"()"+";\n"+
+                             "return "+" obj"+ClassNames.get(i)+"sList; \n"+
                              "}"+"\n"+
-                             "  public void getLike("+"){"+"\n"+
+                             "  public List<"+ClassNames.get(i)+"> getLike("+"){"+"\n"+
+                             "List  <"+ClassNames.get(i) +"> obj"+ClassNames.get(i) +"sList = new ArrayList<"+ ClassNames.get(i)+">()"+";\n"+
+                             ClassNames.get(i) +" obj"+ClassNames.get(i) +" = new "+ ClassNames.get(i)+"()"+";\n"+
+                             "return "+" obj"+ClassNames.get(i)+"sList; \n"+
                              "}"+"\n"+
                              
                              "}";
