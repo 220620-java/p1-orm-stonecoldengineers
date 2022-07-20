@@ -566,19 +566,19 @@ public class ClassCreator {
                             "}"+"\n"+
                             "";
         }
-        else if(methodType.equals("getList")){
+        else if(methodType.equals("List")){
             String subString1[] = getMethodSubString(ColoumnList, "List");
             String subString2[] = getMethodSubString(ColoumnList, "prepList");
             methodContent = "ServerConnect objServerConnection = new ServerConnect();"+"\n"+
                             "Connection objConnection = objServerConnection.connectToServer();"+"\n"+
-                            "String getSingleQuery = \"SELECT * FROM public."+ tableName + " \"+\n"+
-                            
+                            "String getListQuery = \"SELECT * FROM public."+ tableName + "\";\n"+
                             "try{"+"\n"+
-                            "PreparedStatement objPreparedStatement = objConnection.prepareStatement(getSingleQuery);" + "\n"+
+                            "PreparedStatement objPreparedStatement = objConnection.prepareStatement(getListQuery);" + "\n"+
                             subString2[0]+"\n"+
                             "ResultSet Result = objPreparedStatement.executeQuery();"+"\n"+
                             "while(Result.next()){"+"\n"+
                             getSubStringsForSelect(tableName,ColoumnList,"getobjAssignment")+"\n"+
+                            "obj"+tableName+"sList.add("+"obj"+tableName+"); \n"+
                             "}"+"\n"+
                             "}"+"\n"+
                             "catch(SQLException e){"+"\n"+
@@ -586,8 +586,26 @@ public class ClassCreator {
                             "}"+"\n"+
                             "";
         }
-        else if(methodType.equals("getLike")){
-            
+        else if(methodType.equals("Like")){
+            String subString1[] = getMethodSubString(ColoumnList, "List");
+            String subString2[] = getMethodSubString(ColoumnList, "prepList");
+            methodContent = "ServerConnect objServerConnection = new ServerConnect();"+"\n"+
+                            "Connection objConnection = objServerConnection.connectToServer();"+"\n"+
+                            "String getLikeQuery = \"SELECT * FROM public."+ tableName + "\";\n"+
+                            subString1[0] + "\n"+
+                            "try{"+"\n"+
+                            "PreparedStatement objPreparedStatement = objConnection.prepareStatement(getLikeQuery);" + "\n"+
+                            subString2[0]+"\n"+
+                            "ResultSet Result = objPreparedStatement.executeQuery();"+"\n"+
+                            "while(Result.next()){"+"\n"+
+                            getSubStringsForSelect(tableName,ColoumnList,"getobjAssignment")+"\n"+
+                            "obj"+tableName+"sList.add("+"obj"+tableName+"); \n"+
+                            "}"+"\n"+
+                            "}"+"\n"+
+                            "catch(SQLException e){"+"\n"+
+                            "throw (new Error(e));"+"\n"+
+                            "}"+"\n"+
+                            "";
         }
         return methodContent;
 
@@ -625,11 +643,13 @@ public class ClassCreator {
                              "  public List<"+ClassNames.get(i)+"> getList("+"){"+"\n"+
                              "List  <"+ClassNames.get(i) +"> obj"+ClassNames.get(i) +"sList = new ArrayList<"+ ClassNames.get(i)+">()"+";\n"+
                              ClassNames.get(i) +" obj"+ClassNames.get(i) +" = new "+ ClassNames.get(i)+"()"+";\n"+
+                             createMethods(ClassNames.get(i), ColoumnList, "List")+
                              "return "+" obj"+ClassNames.get(i)+"sList; \n"+
                              "}"+"\n"+
                              "  public List<"+ClassNames.get(i)+"> getLike("+"){"+"\n"+
                              "List  <"+ClassNames.get(i) +"> obj"+ClassNames.get(i) +"sList = new ArrayList<"+ ClassNames.get(i)+">()"+";\n"+
                              ClassNames.get(i) +" obj"+ClassNames.get(i) +" = new "+ ClassNames.get(i)+"()"+";\n"+
+                             createMethods(ClassNames.get(i), ColoumnList, "Like")+
                              "return "+" obj"+ClassNames.get(i)+"sList; \n"+
                              "}"+"\n"+
                              
